@@ -1,0 +1,130 @@
+{
+  "within-zara2 (agent split)": {
+    "const_vel": {
+      "ade": 0.3426176799711708,
+      "fde": 0.7627406609016798
+    },
+    "observable": "delay-5 +nonlin",
+    "ridge": 0.01,
+    "sweep": [
+      {
+        "M": 1,
+        "ade_kmeans": 0.3329034257711126,
+        "fde_kmeans": 0.7408939607770382,
+        "ade_random": 0.3329034257711126,
+        "fde_random": 0.7408939607770382,
+        "n_thin_clusters": 0,
+        "n_diverged": 0
+      },
+      {
+        "M": 2,
+        "ade_kmeans": 0.3301276685892001,
+        "fde_kmeans": 0.7309239734959786,
+        "ade_random": 0.33232630553086173,
+        "fde_random": 0.7356521442171612,
+        "n_thin_clusters": 0,
+        "n_diverged": 0
+      },
+      {
+        "M": 4,
+        "ade_kmeans": 0.326473630070845,
+        "fde_kmeans": 0.7233392954932267,
+        "ade_random": 0.34688600397984776,
+        "fde_random": 0.7676852834614373,
+        "n_thin_clusters": 0,
+        "n_diverged": 0
+      },
+      {
+        "M": 8,
+        "ade_kmeans": 0.34030064689330036,
+        "fde_kmeans": 0.7547061626135495,
+        "ade_random": 0.3436776542303104,
+        "fde_random": 0.7627447871191657,
+        "n_thin_clusters": 2,
+        "n_diverged": 0
+      },
+      {
+        "M": 16,
+        "ade_kmeans": 0.3541704110700424,
+        "fde_kmeans": 0.7760733385457791,
+        "ade_random": 0.3668289977948005,
+        "fde_random": 0.808089340170398,
+        "n_thin_clusters": 3,
+        "n_diverged": 0
+      },
+      {
+        "M": 32,
+        "ade_kmeans": 0.3713710036342042,
+        "fde_kmeans": 0.8163389123185651,
+        "ade_random": 0.35833976521193367,
+        "fde_random": 0.7887704605997841,
+        "n_thin_clusters": 15,
+        "n_diverged": 0
+      }
+    ]
+  },
+  "loo (train split -> zara2)": {
+    "const_vel": {
+      "ade": 0.32185029154689515,
+      "fde": 0.7238398588450653
+    },
+    "observable": "delay-5 +nonlin",
+    "ridge": 0.01,
+    "sweep": [
+      {
+        "M": 1,
+        "ade_kmeans": 0.3217382885443499,
+        "fde_kmeans": 0.7138636038286575,
+        "ade_random": 0.3217382885443499,
+        "fde_random": 0.7138636038286575,
+        "n_thin_clusters": 0,
+        "n_diverged": 0
+      },
+      {
+        "M": 2,
+        "ade_kmeans": 0.31851087640112896,
+        "fde_kmeans": 0.709780502690727,
+        "ade_random": 0.3221585326560662,
+        "fde_random": 0.7153379038530769,
+        "n_thin_clusters": 0,
+        "n_diverged": 0
+      },
+      {
+        "M": 4,
+        "ade_kmeans": 0.32682612068868605,
+        "fde_kmeans": 0.7295276766914641,
+        "ade_random": 0.32317934501349377,
+        "fde_random": 0.7162965088805534,
+        "n_thin_clusters": 0,
+        "n_diverged": 0
+      },
+      {
+        "M": 8,
+        "ade_kmeans": 0.3061942646383484,
+        "fde_kmeans": 0.6813017797787174,
+        "ade_random": 0.3266591780028281,
+        "fde_random": 0.7220006731247091,
+        "n_thin_clusters": 0,
+        "n_diverged": 0
+      },
+      {
+        "M": 16,
+        "ade_kmeans": 0.3142156245473012,
+        "fde_kmeans": 0.7044077369200299,
+        "ade_random": 0.3326230480459496,
+        "fde_random": 0.7347058489077878,
+        "n_thin_clusters": 0,
+        "n_diverged": 0
+      },
+      {
+        "M": 32,
+        "ade_kmeans": 1.0505313648190409,
+        "fde_kmeans": 3.9264771462309946,
+        "ade_random": 0.3441140209999579,
+        "fde_random": 0.7565188238780731,
+        "n_thin_clusters": 0,
+        "n_diverged": 0
+      }
+    ]
+  }
+}

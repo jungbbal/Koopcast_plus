@@ -1,0 +1,658 @@
+{
+  "within-zara2 (agent split)": {
+    "const_vel": {
+      "ade": 0.3426176799711708,
+      "fde": 0.7627406609016798
+    },
+    "runs": [
+      {
+        "observable": "base [p,v,1]",
+        "dim": 5,
+        "ridge": 1e-06,
+        "ade": 0.3407210550120454,
+        "fde": 0.75712842100797,
+        "rho": 1.0136761506562104,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "base [p,v,1]",
+        "dim": 5,
+        "ridge": 0.0001,
+        "ade": 0.3407208481689604,
+        "fde": 0.7571279811600223,
+        "rho": 1.0136754379152462,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "base [p,v,1]",
+        "dim": 5,
+        "ridge": 0.01,
+        "ade": 0.34070032093677083,
+        "fde": 0.7570844085674564,
+        "rho": 1.0136042114828254,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "base [p,v,1]",
+        "dim": 5,
+        "ridge": 0.1,
+        "ade": 0.34052778830320846,
+        "fde": 0.756725435836733,
+        "rho": 1.0129610407980878,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-2",
+        "dim": 7,
+        "ridge": 1e-06,
+        "ade": 0.33288182072846617,
+        "fde": 0.742487673640793,
+        "rho": 1.0098613620792947,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-2",
+        "dim": 7,
+        "ridge": 0.0001,
+        "ade": 0.3328820944017899,
+        "fde": 0.7424883450052333,
+        "rho": 1.0098613636374856,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-2",
+        "dim": 7,
+        "ridge": 0.01,
+        "ade": 0.33291119157753823,
+        "fde": 0.7425583155264175,
+        "rho": 1.0098611865648122,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-2",
+        "dim": 7,
+        "ridge": 0.1,
+        "ade": 0.33330848315868117,
+        "fde": 0.7433697307111151,
+        "rho": 1.009831491094694,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-3",
+        "dim": 9,
+        "ridge": 1e-06,
+        "ade": 0.33371726041659505,
+        "fde": 0.7446126284048743,
+        "rho": 1.0089049082775368,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-3",
+        "dim": 9,
+        "ridge": 0.0001,
+        "ade": 0.33371726552669295,
+        "fde": 0.7446128264942435,
+        "rho": 1.0089046611773034,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-3",
+        "dim": 9,
+        "ridge": 0.01,
+        "ade": 0.3337187597324435,
+        "fde": 0.7446335685509347,
+        "rho": 1.0088801495827864,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-3",
+        "dim": 9,
+        "ridge": 0.1,
+        "ade": 0.3338152344382149,
+        "fde": 0.7449009846328551,
+        "rho": 1.0086727837897727,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-4",
+        "dim": 11,
+        "ridge": 1e-06,
+        "ade": 0.3343785790819958,
+        "fde": 0.7461756839891951,
+        "rho": 1.0052711469019207,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-4",
+        "dim": 11,
+        "ridge": 0.0001,
+        "ade": 0.334378410566477,
+        "fde": 0.746175616365079,
+        "rho": 1.0052710533220333,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-4",
+        "dim": 11,
+        "ridge": 0.01,
+        "ade": 0.3343628398243301,
+        "fde": 0.7461704639598314,
+        "rho": 1.0052615508497844,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-4",
+        "dim": 11,
+        "ridge": 0.1,
+        "ade": 0.33432342195765974,
+        "fde": 0.7462434386502471,
+        "rho": 1.0051648587345554,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-5",
+        "dim": 13,
+        "ridge": 1e-06,
+        "ade": 0.3337297195247385,
+        "fde": 0.7444708687492845,
+        "rho": 1.0054646313763456,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-5",
+        "dim": 13,
+        "ridge": 0.0001,
+        "ade": 0.3337297634428986,
+        "fde": 0.7444716198905408,
+        "rho": 1.005464131930422,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-5",
+        "dim": 13,
+        "ridge": 0.01,
+        "ade": 0.3337351682395765,
+        "fde": 0.7445471024184879,
+        "rho": 1.005414421585285,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-5",
+        "dim": 13,
+        "ridge": 0.1,
+        "ade": 0.33387120445035284,
+        "fde": 0.7452619364865845,
+        "rho": 1.0049824802765313,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-6",
+        "dim": 15,
+        "ridge": 1e-06,
+        "ade": 0.33512398458108367,
+        "fde": 0.7477557447215132,
+        "rho": 0.9999999988127238,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-6",
+        "dim": 15,
+        "ridge": 0.0001,
+        "ade": 0.33512386370227204,
+        "fde": 0.7477559123302808,
+        "rho": 0.9999998812708836,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-6",
+        "dim": 15,
+        "ridge": 0.01,
+        "ade": 0.33511328754615355,
+        "fde": 0.7477745382375074,
+        "rho": 0.9999881044042568,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-6",
+        "dim": 15,
+        "ridge": 0.1,
+        "ade": 0.33513687971072964,
+        "fde": 0.7480838519634188,
+        "rho": 0.9998805797005443,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-3 +nonlin",
+        "dim": 14,
+        "ridge": 1e-06,
+        "ade": 0.33379802838087363,
+        "fde": 0.743205632903209,
+        "rho": 1.0072216567193617,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-3 +nonlin",
+        "dim": 14,
+        "ridge": 0.0001,
+        "ade": 0.33379909489362114,
+        "fde": 0.743209036566966,
+        "rho": 1.0072214655208998,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-3 +nonlin",
+        "dim": 14,
+        "ridge": 0.01,
+        "ade": 0.33391394860557905,
+        "fde": 0.7435695877792337,
+        "rho": 1.0072009807787645,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-3 +nonlin",
+        "dim": 14,
+        "ridge": 0.1,
+        "ade": 0.33543812963906294,
+        "fde": 0.7479311780551334,
+        "rho": 1.0069575162724684,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-5 +nonlin",
+        "dim": 18,
+        "ridge": 1e-06,
+        "ade": 0.33276783140846433,
+        "fde": 0.7404412007706601,
+        "rho": 1.005183099087202,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-5 +nonlin",
+        "dim": 18,
+        "ridge": 0.0001,
+        "ade": 0.33276904440427724,
+        "fde": 0.740445353044812,
+        "rho": 1.0051817720282454,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-5 +nonlin",
+        "dim": 18,
+        "ridge": 0.01,
+        "ade": 0.3329034257711126,
+        "fde": 0.7408939607770382,
+        "rho": 1.0050561383125367,
+        "n_diverged": 0,
+        "n_windows": 1586
+      },
+      {
+        "observable": "delay-5 +nonlin",
+        "dim": 18,
+        "ridge": 0.1,
+        "ade": 0.33474354721038924,
+        "fde": 0.7463810054473341,
+        "rho": 1.0042298784152257,
+        "n_diverged": 0,
+        "n_windows": 1586
+      }
+    ]
+  },
+  "loo (train split -> zara2)": {
+    "const_vel": {
+      "ade": 0.32185029154689515,
+      "fde": 0.7238398588450653
+    },
+    "runs": [
+      {
+        "observable": "base [p,v,1]",
+        "dim": 5,
+        "ridge": 1e-06,
+        "ade": 0.3415516723228662,
+        "fde": 0.7700467364925963,
+        "rho": 0.9999999998813465,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "base [p,v,1]",
+        "dim": 5,
+        "ridge": 0.0001,
+        "ade": 0.34155166979245494,
+        "fde": 0.7700467316904407,
+        "rho": 0.9999999881361117,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "base [p,v,1]",
+        "dim": 5,
+        "ridge": 0.01,
+        "ade": 0.34155141710273884,
+        "fde": 0.7700462524244253,
+        "rho": 0.9999988134428638,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "base [p,v,1]",
+        "dim": 5,
+        "ridge": 0.1,
+        "ade": 0.3415491518144336,
+        "fde": 0.7700419816409476,
+        "rho": 0.999988118848176,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-2",
+        "dim": 7,
+        "ridge": 1e-06,
+        "ade": 0.3401858204947507,
+        "fde": 0.7614439137673084,
+        "rho": 0.99999999985261,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-2",
+        "dim": 7,
+        "ridge": 0.0001,
+        "ade": 0.3401858447868174,
+        "fde": 0.7614439393571809,
+        "rho": 0.9999999852609129,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-2",
+        "dim": 7,
+        "ridge": 0.01,
+        "ade": 0.34018827359757287,
+        "fde": 0.7614464977262041,
+        "rho": 0.9999985252551754,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-2",
+        "dim": 7,
+        "ridge": 0.1,
+        "ade": 0.3402103176289038,
+        "fde": 0.7614696996245464,
+        "rho": 0.999985175468343,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-3",
+        "dim": 9,
+        "ridge": 1e-06,
+        "ade": 0.34077855712015526,
+        "fde": 0.7640299678938776,
+        "rho": 0.9999999994983441,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-3",
+        "dim": 9,
+        "ridge": 0.0001,
+        "ade": 0.34077858740586303,
+        "fde": 0.7640299940792948,
+        "rho": 0.9999999498305522,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-3",
+        "dim": 9,
+        "ridge": 0.01,
+        "ade": 0.3407816160860849,
+        "fde": 0.7640326129538921,
+        "rho": 0.9999949444226277,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-3",
+        "dim": 9,
+        "ridge": 0.1,
+        "ade": 0.340809159395117,
+        "fde": 0.7640564510068624,
+        "rho": 0.9999452216984476,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-4",
+        "dim": 11,
+        "ridge": 1e-06,
+        "ade": 0.3392157128121396,
+        "fde": 0.7626095758780078,
+        "rho": 0.9999999998268355,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-4",
+        "dim": 11,
+        "ridge": 0.0001,
+        "ade": 0.3392157391996693,
+        "fde": 0.7626095925166609,
+        "rho": 0.999999982683572,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-4",
+        "dim": 11,
+        "ridge": 0.01,
+        "ade": 0.3392183785067734,
+        "fde": 0.7626112573628503,
+        "rho": 0.9999982668714554,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-4",
+        "dim": 11,
+        "ridge": 0.1,
+        "ade": 0.3392424226038947,
+        "fde": 0.7626264813071193,
+        "rho": 0.9999825309772903,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-5",
+        "dim": 13,
+        "ridge": 1e-06,
+        "ade": 0.3397771474097398,
+        "fde": 0.7637256122398633,
+        "rho": 1.0002344554225062,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-5",
+        "dim": 13,
+        "ridge": 0.0001,
+        "ade": 0.33977717481316677,
+        "fde": 0.7637256307599041,
+        "rho": 1.0002343468991695,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-5",
+        "dim": 13,
+        "ridge": 0.01,
+        "ade": 0.33977991564292254,
+        "fde": 0.7637274833862354,
+        "rho": 1.000222962897804,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-5",
+        "dim": 13,
+        "ridge": 0.1,
+        "ade": 0.33980487662672104,
+        "fde": 0.7637443821180062,
+        "rho": 1.0001145986796363,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-6",
+        "dim": 15,
+        "ridge": 1e-06,
+        "ade": 0.34101523665342454,
+        "fde": 0.7683120223400906,
+        "rho": 1.0001891108440866,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-6",
+        "dim": 15,
+        "ridge": 0.0001,
+        "ade": 0.3410152664458225,
+        "fde": 0.7683120419918199,
+        "rho": 1.0001889689458021,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-6",
+        "dim": 15,
+        "ridge": 0.01,
+        "ade": 0.3410182462940843,
+        "fde": 0.7683140077339364,
+        "rho": 1.0001735281340038,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-6",
+        "dim": 15,
+        "ridge": 0.1,
+        "ade": 0.3410453953540083,
+        "fde": 0.7683319299043454,
+        "rho": 1.0000933237895024,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-3 +nonlin",
+        "dim": 14,
+        "ridge": 1e-06,
+        "ade": 0.32713993794409824,
+        "fde": 0.7252197751208683,
+        "rho": 0.9999999999603735,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-3 +nonlin",
+        "dim": 14,
+        "ridge": 0.0001,
+        "ade": 0.3271397683838683,
+        "fde": 0.7252193388485902,
+        "rho": 0.999999996036952,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-3 +nonlin",
+        "dim": 14,
+        "ridge": 0.01,
+        "ade": 0.3271228343983772,
+        "fde": 0.725175773706378,
+        "rho": 0.9999996002124032,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-3 +nonlin",
+        "dim": 14,
+        "ridge": 0.1,
+        "ade": 0.3269708776376986,
+        "fde": 0.7247853219297424,
+        "rho": 0.9999956818836857,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-5 +nonlin",
+        "dim": 18,
+        "ridge": 1e-06,
+        "ade": 0.32175418094987895,
+        "fde": 0.7139025742180982,
+        "rho": 0.9999999999311293,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-5 +nonlin",
+        "dim": 18,
+        "ridge": 0.0001,
+        "ade": 0.3217540232986847,
+        "fde": 0.7139021875802354,
+        "rho": 0.9999999931122215,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-5 +nonlin",
+        "dim": 18,
+        "ridge": 0.01,
+        "ade": 0.3217382885443499,
+        "fde": 0.7138636038286575,
+        "rho": 0.9999993043646055,
+        "n_diverged": 0,
+        "n_windows": 3789
+      },
+      {
+        "observable": "delay-5 +nonlin",
+        "dim": 18,
+        "ridge": 0.1,
+        "ade": 0.3215979788772971,
+        "fde": 0.7135200341667883,
+        "rho": 0.9999924024649782,
+        "n_diverged": 0,
+        "n_windows": 3789
+      }
+    ]
+  }
+}

@@ -1,0 +1,172 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\title{\textbf{KoopCast\texttt{++}: Neighbour-aware Koopman\\ Pedestrian Trajectory Prediction}}
+\author{Design specification \& v1 results}
+\date{\today}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\pos}{\mathbf{p}}
+\newcommand{\psib}{\bm{\psi}}
+\newcommand{\Kop}{K}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Abstract.} KoopCast\texttt{++} predicts pedestrian futures with
+a \emph{linear Koopman operator} acting on a lifted observable that already
+contains the (time-delayed) state, so \emph{no decoder is needed}: the predicted
+positions appear directly in the observable and are read off by a fixed
+projection. The only learned component is a \emph{social (neighbour) encoder}.
+The operator is obtained in closed form by \emph{Extended DMD}, and the encoder
+is trained with a plain one-step Koopman \emph{consistency} loss. The
+obstacle/environment branch of the earlier KoopyAdapt is dropped. Models are
+trained per held-out scene on the official ETH/UCY leave-one-out splits
+(Social-STGCNN distribution).
+
+\section{Setup}
+A scene has pedestrians $i=1,\dots,N$ with positions $\pos_i^t\in\R^2$ (world
+metres). Observation length $T_o{=}8$, prediction length $T_p{=}12$,
+$\Delta t{=}0.4$\,s. At the prediction origin $t_0$ we observe
+$X_i=[\pos_i^{\,t_0-T_o+1},\dots,\pos_i^{\,t_0}]$ and predict
+$[\pos_i^{\,t_0+1},\dots,\pos_i^{\,t_0+T_p}]$.
+
+\section{Observable (lifted state)}
+The observable stacks a \textbf{time-delay history} of the state with a social
+embedding ($d = 2T_o + d_s = 16 + d_s$):
+\[
+  \psib_i^t \;=\;
+  \big[\,\underbrace{\pos_i^{t},\pos_i^{t-1},\dots,\pos_i^{t-7}}_{\text{16 (time-delay)}}\;;\;
+  \underbrace{\mathbf{e}_i^t}_{d_s\ \text{social}}\,\big]\in\R^{d}.
+\]
+Because the raw positions are coordinates of $\psib$, advancing $\psib$ moves the
+most-recent-position slot to the next step; the predicted position is recovered
+by a \emph{fixed} read-out $C=[\,I_2\ \mathbf{0}\,]$, i.e. $\hat{\pos}=C\psib$.
+\textbf{There is no learned decoder.}
+
+\paragraph{Social encoding.} Around ego $i$ at time $t$, neighbours within
+radius $R=2.0$\,m are binned into a $S{=}12$-sector polar proximity histogram
+$\mathbf{g}_i^t\in\R^{S}$,
+\[
+  \mathbf{g}_i^t[k]=\!\!\max_{\,j:\angle(j)\in\text{sec }k,\,d_{ij}\le R}\!\!
+  \Big(1-\tfrac{d_{ij}}{R}\Big),\quad d_{ij}=\lVert\pos_j^{t}-\pos_i^{t}\rVert,
+\]
+compressed by the learned MLP $\mathbf{e}_i^t=E_{\text{dyn}}(\mathbf{g}_i^t)$,
+$E_{\text{dyn}}:12\!\to\!16\!\to\!16\!\to\!d_s$ (default $d_s{=}4$).
+
+\section{Koopman propagation}
+A single linear operator $\Kop\in\R^{d\times d}$ advances the observable, and the
+horizon is produced by iterating it:
+\[
+  \psib_i^{\,t+1}=\Kop\,\psib_i^{\,t},
+  \qquad
+  \hat{\pos}_i^{\,t_0+\tau}=C\,\Kop^{\tau}\psib_i^{\,t_0},\quad \tau=1,\dots,T_p.
+\]
+The social block is propagated by $\Kop$ as part of $\psib$ (neighbours' futures
+are not recomputed during rollout).
+
+\section{Operator via Extended DMD}
+Stack the lifted training transitions column-wise, $\Psi=[\psib^{t}]$,
+$\Psi'=[\psib^{t+1}]$ over all consecutive pairs (all agents, all training
+scenes). EDMD gives $\Kop$ in closed form,
+\[
+  \Kop \;=\; \Psi'\,\Psi^{\dagger}
+  \;=\; \Psi'\Psi^{\top}\big(\Psi\Psi^{\top}+\lambda I\big)^{-1},
+\]
+with a small ridge $\lambda$. The solve is differentiable in $\Psi$, hence in the
+encoder parameters.
+
+\section{Training objective (v1: plain consistency)}
+The only learnable parameters are the social encoder
+$\theta=\text{params}(E_{\text{dyn}})$, trained to minimise the one-step Koopman
+consistency residual:
+\[
+  \boxed{\;
+  \mathcal{L}(\theta)=\frac{1}{|\mathcal{P}|}\sum_{(t)\in\mathcal{P}}
+  \big\lVert\,\psib^{\,t+1}(\theta)-\Kop\,\psib^{\,t}(\theta)\big\rVert_2^2,
+  \quad \Kop=\Kop(\theta)\ \text{via EDMD}.\;}
+\]
+Since $\Kop$ is the EDMD minimiser for the current encoding, $\mathcal{L}$ is the
+minimal linear-fit residual; minimising it over $\theta$ pushes the lifted
+coordinates toward a Koopman-invariant (linearly evolvable) subspace
+(\emph{cf.}\ LKIS, Takeishi et al.\ 2017). \emph{Caveat:} a plain consistency
+loss admits a trivial collapse of the social block (a constant embedding is
+perfectly self-predictable); this v1 accepts the risk and we compare against
+alternatives (e.g.\ a state-block multi-step prediction loss) if needed.
+
+\paragraph{Procedure.} per minibatch (here: full batch): encode
+$\to\Psi,\Psi'$; solve EDMD for $\Kop$; compute $\mathcal{L}$; backprop to
+$\theta$. After training, refit one global $\Kop$ on all training pairs. One
+model per held-out scene.
+
+\section{Adaptive online operator (optional)}
+At inference an agent-specific operator can track the agent's recent dynamics by
+a streaming rank-one update over \emph{observed} lifted states,
+\[
+  \Kop_i \;\leftarrow\; \Kop_i + \eta\,
+  \frac{\big(\psib^{\,s+1}-\Kop_i\psib^{\,s}\big)\,{\psib^{\,s}}^{\!\top}}
+       {\lVert\psib^{\,s}\rVert^2},
+\]
+applied for each consecutive observed pair $(\psib^{s},\psib^{s+1})$ before the
+forward rollout ($\eta{=}0$ recovers the static global $\Kop$). The update must
+use \emph{real} observations: applying it to the predicted rollout gives a zero
+residual (no-op), which is exactly why the legacy implementation's adaptation
+was inert. With the time-delay-$8$ observable and the standard $8$-step protocol
+only one observable is available, so adaptation is effective only with a longer
+/ streaming history; the mechanism is implemented (\texttt{eta}) and left off in
+the v1 benchmark.
+
+\section{Relation to predecessors}
+\begin{itemize}[nosep]
+  \item \textbf{KoopCast}: Koopman $+$ MDN decoder, $k$-nearest relative
+        neighbours. (removed from the repo.)
+  \item \textbf{KoopyAdapt}: adds an obstacle branch, sector social, online
+        adaptation; uses encoders $+$ a learned decoder.
+  \item \textbf{KoopCast\texttt{++} (this model)}: \emph{no decoder} (state in
+        the observable), \emph{no obstacle branch}, social-only learned
+        dictionary, EDMD operator, plain consistency loss, $R=2$\,m.
+\end{itemize}
+
+\section{v1 results (ETH/UCY leave-one-out)}
+Same neighbour-aware target set per scene (\texttt{evaluate\_scene}); ADE/FDE in
+metres, $8\!\to\!12$. Baseline is constant velocity (last observed velocity
+extrapolated).
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+ & \multicolumn{2}{c}{ConstantVelocity} & \multicolumn{2}{c}{KoopCast\texttt{++} (static)}\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+scene & ADE & FDE & ADE & FDE\\
+\midrule
+eth   & 1.076 & 2.282 & \textbf{1.066} & \textbf{2.186}\\
+hotel & \textbf{0.319} & \textbf{0.614} & 0.499 & 1.087\\
+univ  & \textbf{0.604} & \textbf{1.339} & 0.724 & 1.523\\
+zara1 & \textbf{0.427} & \textbf{0.952} & 0.436 & 0.971\\
+zara2 & \textbf{0.322} & \textbf{0.724} & 0.354 & 0.788\\
+\midrule
+AVG   & \textbf{0.550} & \textbf{1.182} & 0.616 & 1.311\\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent\textbf{Reading.} The v1 model (plain consistency loss) is on par with
+constant velocity on \textsc{eth} (slightly better) and \textsc{zara1}, but worse
+on \textsc{hotel}/\textsc{univ}/\textsc{zara2}, so on average it does not yet beat
+the baseline. The model is well-behaved (operator spectral radius $\approx 1$, no
+rollout blow-up), unlike the old KoopCast inference path. This is the expected v1
+checkpoint; next iterations vary the training loss (state-block multi-step),
+social representation, and $d_s$, comparing back to this table.
+
+\section{Defaults / open knobs}\label{sec:open}
+\begin{itemize}[nosep]
+  \item social embedding width $d_s$ (default $4$); $E_{\text{dyn}}$ MLP size.
+  \item EDMD ridge $\lambda$ (default $10^{-4}$); minibatch vs.\ global fit.
+  \item alternative losses (state-block multi-step prediction) for the next
+        iteration.
+  \item online $\Kop$ adaptation ($\eta$) for streaming / longer-context use.
+\end{itemize}
+
+\end{document}

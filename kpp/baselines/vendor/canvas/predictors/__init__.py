@@ -1,0 +1,1 @@
+from canvas.predictors.predictor import Predictors

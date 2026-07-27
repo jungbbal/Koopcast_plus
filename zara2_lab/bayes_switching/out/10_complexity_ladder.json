@@ -1,0 +1,47 @@
+{
+  "const_vel": {
+    "ade": 0.32185029154689515,
+    "fde": 0.7238398588450653
+  },
+  "rungs": [
+    {
+      "model": "accel-global",
+      "params": 2,
+      "ade_frozen": 0.3358901495448999,
+      "ade_switch": 0.3358901495448999,
+      "fde": 0.7571643260560624
+    },
+    {
+      "model": "accel-regime",
+      "params": 16,
+      "ade_frozen": 0.3312366124634059,
+      "ade_switch": 0.33128800413631293,
+      "fde": 0.7462616430684719,
+      "ade_switch_std": 0.000430481777727328
+    },
+    {
+      "model": "vlin-regime",
+      "params": 48,
+      "ade_frozen": 0.31697794372829985,
+      "ade_switch": 0.31637462511193165,
+      "fde": 0.7076431702441589,
+      "ade_switch_std": 0.0006368833701906208
+    },
+    {
+      "model": "vlin+hist",
+      "params": 80,
+      "ade_frozen": 0.3100327491677793,
+      "ade_switch": 0.30958805727344996,
+      "fde": 0.6911408166020437,
+      "ade_switch_std": 0.00045784981277247576
+    },
+    {
+      "model": "koopman-regime",
+      "params": 2592,
+      "ade_frozen": 0.30632261864543714,
+      "ade_switch": 0.30504103676464367,
+      "fde": 0.6768770598490765,
+      "ade_switch_std": 0.0008177295476115994
+    }
+  ]
+}

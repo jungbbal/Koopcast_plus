@@ -1,0 +1,9 @@
+snu-asri (lobby3) official split, copied 2026-07-20 from /home/jungbbal/ood/lobby3/
+
+  train : 2.npy .. 9.npy   (8 scenes, 48941 timesteps)
+  val   : val_1.npy        (= lobby3/val/1.npy)
+  test  : NOT copied -- it is data/raw/snu-asri/0.npy, md5 aaef2ed3599b0d66510ab8a7887967fb,
+          byte-identical to lobby3/test/0.npy.
+
+The CANVAS lobby checkpoints follow this split, so training on 2..9 and scoring
+on 0.npy puts KoopCast++ on the same footing as the vendored baselines.

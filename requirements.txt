@@ -1,0 +1,4 @@
+numpy
+pandas
+scipy            # GC interpolation, Town-Center rotation
+opencv-python    # Town-Center undistortion, Edinburgh homography

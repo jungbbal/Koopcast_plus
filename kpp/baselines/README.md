@@ -101,7 +101,7 @@ epochs on our splits and scored with `scripts/eval_trajectron.py --both`.
 Retraining reproduces the shipped checkpoints to within a few percent on average
 (AVG ADE 0.5565 → 0.5771) and *beats* them on zara1/zara2. Treat the pretrained
 checkpoints as the default and the retrained ones as the reproducibility check.
-**Per-scene numbers: [docs/RESULTS.md](../../docs/RESULTS.md#12-trajectron--pretrained-vs-재학습-재현성-확인).**
+**Per-scene numbers: [docs/RESULTS.md](../../docs/RESULTS.md#12-trajectron--pretrained-vs-retrained-reproducibility-check).**
 
 Retrained checkpoints live in `runs/trajectron/<scene>/models_<timestamp><scene>/`.
 
@@ -125,11 +125,12 @@ Weights map to the ETH/UCY leave-one-out convention: the checkpoint named for a
 scene is the model trained on the *other* scenes and tested on that held-out
 scene — matching `load_ethucy(scene, "test")`.
 
-## snu-asri (lobby) / KoopCast++ 결과
+## snu-asri (lobby) / KoopCast++ results
 
-snu-asri 공식 스플릿 설명, snu-asri 결과표, KoopCast++ 온라인 적응(eta) 결과,
-그리고 snu-asri 전용 EDMD ridge 이슈는 **[docs/RESULTS.md](../../docs/RESULTS.md)**
-로 옮겼습니다 — 모든 실험 숫자를 한 곳에 모으기 위해서입니다.
+The description of the official snu-asri split, the snu-asri results table, the
+KoopCast++ online adaptation (eta) results, and the snu-asri-specific EDMD ridge
+issue have been moved to **[docs/RESULTS.md](../../docs/RESULTS.md)** — to gather
+all experiment numbers in one place.
 
 ## Usage
 ```python

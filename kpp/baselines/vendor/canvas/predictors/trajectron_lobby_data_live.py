@@ -45,7 +45,7 @@ def process_tracking_results(tracking_results, dt=0.4):
 
     Parameters:
       tracking_results : dict
-         Keys are object ids (혹은 Node 객체) and values are histories (array-like with shape (T, 2)
+         Keys are object ids (or Node objects) and values are histories (array-like with shape (T, 2)
          where the two columns represent x and y positions).
       dt : float
          Time difference between timesteps.
@@ -54,11 +54,11 @@ def process_tracking_results(tracking_results, dt=0.4):
       scene : Scene
          A scene with one Node per object id, where each node's trajectory is padded to the same length.
     """
-    # tracking_results가 비어있으면 빈 Scene 반환
+    # If tracking_results is empty, return an empty Scene
     if not tracking_results:
         return Scene(timesteps=0, dt=dt, name="tracking_results")
 
-    # 각 객체의 trajectory를 numpy array로 변환 및 reshape 처리 (1차원인 경우)
+    # Convert each object's trajectory to a numpy array and reshape it (if 1-dimensional)
     valid_histories = {}
     for key, history in tracking_results.items():
         arr = np.array(history)
@@ -68,7 +68,7 @@ def process_tracking_results(tracking_results, dt=0.4):
             if arr.size % 2 == 0:
                 arr = arr.reshape(-1, 2)
             else:
-                continue  # 형식이 올바르지 않은 경우 건너뜁니다.
+                continue  # Skip if the format is invalid.
         if arr.shape[0] < 2:
             continue
         valid_histories[key] = arr
@@ -76,10 +76,10 @@ def process_tracking_results(tracking_results, dt=0.4):
     if not valid_histories:
         return Scene(timesteps=0, dt=dt, name="tracking_results")
 
-    # 모든 객체의 trajectory 길이 중 최대 길이를 구함
+    # Find the maximum trajectory length among all objects
     max_timesteps = max(arr.shape[0] for arr in valid_histories.values())
 
-    # 모든 객체에 대해 max_timesteps에 맞춰 padding (마지막 값 반복)
+    # Pad every object to max_timesteps (repeating the last value)
     padded_histories = {}
     all_x, all_y = [], []
     for key, arr in valid_histories.items():
@@ -98,12 +98,12 @@ def process_tracking_results(tracking_results, dt=0.4):
     scene.pos_y_mean = global_mean_y
 
     for key, arr in padded_histories.items():
-        # key가 Node 객체라면 id를 추출하고, 아니면 문자열로 통일
+        # If key is a Node object, extract its id; otherwise normalize to a string
         if hasattr(key, 'id'):
             obj_id = str(key.id)
         else:
             obj_id = str(key)
-        # global mean 보정
+        # Global mean correction
         arr_centered = arr - np.array([global_mean_x, global_mean_y])
         x = arr_centered[:, 0]
         y = arr_centered[:, 1]
@@ -133,7 +133,7 @@ def predict(tracking_result, prediction_len=None,model_dir="./", env=None, eval_
     """
     Predict trajectories using the Trajectron model.
     :param tracking_result: dict, keys are object ids and values are histories.
-    :param prediction_len: 예측하고자 하는 길이(타임스텝 수). 제공되면 hyperparameter를 오버라이드함.
+    :param prediction_len: The desired prediction length (number of timesteps). If provided, it overrides the hyperparameter.
     :return: predictions dictionary.
     """
 
@@ -142,7 +142,7 @@ def predict(tracking_result, prediction_len=None,model_dir="./", env=None, eval_
 
     eval_stg.set_environment(env)
     eval_stg.set_annealing_params()
-    # 여기서 원하는 예측 길이가 있다면 hyperparameter를 오버라이드합니다.
+    # If a desired prediction length is given here, override the hyperparameter.
     if prediction_len is not None:
         hyperparams['prediction_horizon'] = prediction_len
 
@@ -153,13 +153,13 @@ def predict(tracking_result, prediction_len=None,model_dir="./", env=None, eval_
 
     scenes = env.scenes
 
-    # get_timesteps_data에 전달되는 max_ft도 prediction_len으로 설정합니다.
+    # Also set max_ft passed to get_timesteps_data to prediction_len.
     ph = hyperparams['prediction_horizon']
     with torch.no_grad():
         for scene in scenes:
-            t = scene.timesteps - 1  # 최신 시점에서 예측 수행
+            t = scene.timesteps - 1  # Perform prediction at the most recent timestep
             timesteps = np.array([t])
-            # min_future_timesteps은 그대로 0, max_ft를 ph로 전달합니다.
+            # Keep min_future_timesteps at 0 and pass max_ft as ph.
             predictions = eval_stg.predict(
                 scene,
                 timesteps,

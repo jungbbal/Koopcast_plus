@@ -125,13 +125,13 @@ class TemporalSceneGraph(object):
         :param edge_removal_filter: -
         :return: TemporalSceneGraph
         """
-        # keys가 문자열이면, 기본 Node 객체로 변환
+        # If keys are strings, convert them to default Node objects
         nodes_list = []
         for key in scene_temp_dict.keys():
             if not hasattr(key, 'type'):
-                # key가 문자열인 경우 기본 DYNAMIC 타입의 Node 객체 생성
+                # If key is a string, create a Node object with the default DYNAMIC type
                 default_type = NodeType("DYNAMIC", 1)
-                # 간단한 더미 데이터(예: shape가 (duration, 2)인 배열)를 넣어줍니다.
+                # Fill in simple dummy data (e.g., an array of shape (duration, 2)).
                 dummy_data = np.full((duration, 2), np.nan)
                 node_obj = Node(node_type=default_type, node_id=key, data=dummy_data)
                 nodes_list.append(node_obj)
@@ -153,26 +153,26 @@ class TemporalSceneGraph(object):
         node_type_mat = np.zeros((N, N), dtype=np.int8)
         node_attention_mat = np.zeros((N, N), dtype=float)
 
-        # 예시 mapping (필요에 따라 다른 타입과 값을 추가)
+        # Example mapping (add other types and values as needed)
         mapping = {"DYNAMIC": 1, "PEDESTRIAN": 2, "BICYCLE": 3, "VEHICLE": 4}
 
         for node_idx, node in enumerate(nodes):
             if online:
-                # RingBuffers의 경우
+                # For RingBuffers
                 position_cube[-scene_temp_dict[node].shape[0]:, node_idx] = scene_temp_dict[node]
             else:
                 position_cube[:, node_idx] = scene_temp_dict[node]
 
-            # node.type이 객체라면 value를 그대로 사용하고, 문자열이면 mapping에서 변환
+            # If node.type is an object, use its value directly; if a string, convert via mapping
             if hasattr(node.type, "value"):
                 type_val = node.type.value
             elif isinstance(node.type, str):
                 type_val = mapping.get(node.type.upper(), 0)
             else:
-                type_val = 0  # 기본값 (필요에 따라 조정)
+                type_val = 0  # Default value (adjust as needed)
             node_type_mat[:, node_idx] = type_val
 
-            # node_attention_mat 채울 때도 마찬가지로, 양쪽 모두 문자열이면 매핑 또는 변환
+            # Similarly, when filling node_attention_mat, map or convert if both sides are strings
             for node_idx_from, node_from in enumerate(nodes):
                 if hasattr(node_from.type, "value"):
                     type_from = node_from.type
@@ -188,7 +188,7 @@ class TemporalSceneGraph(object):
                 else:
                     type_to = node.type
 
-                # attention_radius 키가 (type_from, type_to) 형태로 되어 있다고 가정합니다.
+                # Assume the attention_radius keys are in the form (type_from, type_to).
                 node_attention_mat[node_idx_from, node_idx] = attention_radius[(type_from, type_to)]
 
         '''

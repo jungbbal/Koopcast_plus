@@ -147,8 +147,8 @@ class Trajectron(object):
 
             model = self.node_models_dict[node_type]
 
-            # 수정 전: max_ft=min_future_timesteps (즉, 0으로 전달됨)
-            # 수정 후: max_ft=ph 로 설정하여 예측 horizon 만큼의 미래 타임스텝을 제공함.
+            # Before fix: max_ft=min_future_timesteps (i.e., passed as 0)
+            # After fix: set max_ft=ph to provide future timesteps equal to the prediction horizon.
             batch = get_timesteps_data(
                 env=self.env,
                 scene=scene,
@@ -160,7 +160,7 @@ class Trajectron(object):
                 min_ht=min_history_timesteps,
                 max_ht=self.max_ht,
                 min_ft=min_future_timesteps,
-                max_ft=ph,  # 예측 horizon 만큼의 미래 타임스텝 제공
+                max_ft=ph,  # Provide future timesteps equal to the prediction horizon
                 hyperparams=self.hyperparams
             )
             if batch is None:
@@ -179,7 +179,7 @@ class Trajectron(object):
             if type(map) == torch.Tensor:
                 map = map.to(self.device)
 
-            # Forward pass: 예측 시 prediction_horizon=ph로 설정
+            # Forward pass: set prediction_horizon=ph during prediction
             predictions = model.predict(
                 inputs=x,
                 inputs_st=x_st_t,
@@ -198,7 +198,7 @@ class Trajectron(object):
 
             predictions_np = predictions.cpu().detach().numpy()
 
-            # 예측 결과 할당
+            # Assign prediction results
             for i, ts in enumerate(timesteps_o):
                 if ts not in predictions_dict:
                     predictions_dict[ts] = dict()

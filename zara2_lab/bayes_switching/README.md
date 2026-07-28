@@ -1,49 +1,49 @@
-# bayes_switching — 보행자 운동은 하나의 K인가, 여러 local K_j인가
+# bayes_switching — is pedestrian motion a single K, or several local K_j?
 
 ```
 bayes_switching/
-  bsk/koopman.py    observable, handcrafted token, 최소제곱 fit, 오차/전이행렬
-  bsk/samples.py    Scene -> (psi_t, psi_{t+1}, q_t) 삼중항, closed-loop rollout
-  bsk/observables.py             임의 observable (time-delay/비선형 lift) + closed-loop rollout
-  exp/01_handcrafted_tokens.py   실험 1: LOO 프로토콜 (train 스플릿 fit -> zara2 test)
-  exp/02_within_scene.py         실험 1의 교락요인 통제: zara2 내부 agent 분할
-  exp/03_observable.py           gate: global K 하나로 CV를 넘는 observable 찾기
-  exp/04_M_sweep.py              M in {1,2,4,8,16,32} — 이산 regime인가 연속인가
-  exp/05_seed_stability.py       M=8 peak이 seed 운인지 검증 + 안정성 진단
-  out/*.json                     결과 원본
+  bsk/koopman.py    observable, handcrafted token, least-squares fit, error/transition matrix
+  bsk/samples.py    Scene -> (psi_t, psi_{t+1}, q_t) triples, closed-loop rollout
+  bsk/observables.py             arbitrary observable (time-delay/nonlinear lift) + closed-loop rollout
+  exp/01_handcrafted_tokens.py   experiment 1: LOO protocol (fit on train split -> zara2 test)
+  exp/02_within_scene.py         experiment 1's confounder control: agent split within zara2
+  exp/03_observable.py           gate: find an observable that beats CV with a single global K
+  exp/04_M_sweep.py              M in {1,2,4,8,16,32} — discrete regimes or continuous?
+  exp/05_seed_stability.py       verify whether the M=8 peak is seed luck + stability diagnostics
+  out/*.json                     raw results
 ```
 
-관측함수는 계획대로 `psi_t = [p_t, v_t, 1] in R^5`, `v_t = p_t - p_{t-1}` (metre/step, 초당 아님).
+The observable is as planned: `psi_t = [p_t, v_t, 1] in R^5`, `v_t = p_t - p_{t-1}` (metre/step, not per second).
 
-## 설계에서 먼저 통제한 것 두 가지
+## Two things controlled for up front in the design
 
-계획서 그대로 `E_switch < E_global` 만 보면 **거의 확실히 가설이 지지되는 것처럼 나옵니다.** 둘 다 실제로 문제가 됐습니다.
+Following the plan literally, looking only at `E_switch < E_global` **almost certainly makes the hypothesis appear supported.** Both of these turned out to be real problems.
 
-**1. 파라미터 수.** K_j 5개는 K 1개의 5배 자유도라, 분할을 어떻게 긋든 train 오차는 내려갑니다.
-그래서 `random` 통제군을 넣었습니다 — 토큰 히스토그램은 그대로 두고 라벨만 섞은 것. 파라미터 수는 동일, 운동 정보는 0.
-정직한 주장은 `E_switch < E_global` 이 아니라 **`E_switch < E_random`** 입니다.
+**1. Parameter count.** Five K_j have 5x the degrees of freedom of a single K, so however you draw the partition, the train error goes down.
+So a `random` control was added — the token histogram is kept as is and only the labels are shuffled. Same parameter count, zero motion information.
+The honest claim is not `E_switch < E_global` but **`E_switch < E_random`**.
 
-**2. 공짜로 맞는 성분.** `v`를 위치 차분으로 *정의*했으므로 `p_{t+1} = p_t + v_t` 가 항등식입니다.
-`[I I 0]` 행을 가진 K는 위치 블록을 **오차 0으로** 재현합니다 — 어떤 모델이든 공짜로.
-그래서 전체 MSE는 대부분 상수이고, 실제로 모델링되는 건 `v_{t+1}` (=가속도)뿐입니다.
-아래 숫자는 전부 속도 블록만 뽑은 `mse_v` 입니다.
+**2. Components that fit for free.** Since `v` is *defined* as the position difference, `p_{t+1} = p_t + v_t` is an identity.
+A K with an `[I I 0]` row reproduces the position block **with zero error** — for free, for any model.
+So the total MSE is mostly constant, and what actually gets modeled is only `v_{t+1}` (= acceleration).
+All the numbers below are `mse_v`, extracting only the velocity block.
 
-## 실험 1 — LOO 프로토콜 (train 스플릿에서 fit → zara2)
+## Experiment 1 — LOO protocol (fit on train split → zara2)
 
-train 27,348 샘플 / zara2 5,945 샘플.
+train 27,348 samples / zara2 5,945 samples.
 
 | partition | train mse_v | **test mse_v** |
 |---|---|---|
 | global | 0.006452 | **0.001863** |
 | random | 0.006446 | 0.001867 |
-| k-means (속도 history) | 0.006358 | 0.001883 |
+| k-means (velocity history) | 0.006358 | 0.001883 |
 | token (handcrafted) | 0.006329 | **0.001925** |
 
-**가설과 반대입니다.** train에서는 token이 가장 낮지만(−1.9%), test에서는 **가장 높습니다**(+3.3%).
-계획서가 예측한 "left/right/deceleration 구간에서 차이가 클 것"도 부호가 반대로 나왔습니다 —
-그 구간에서 switching이 오히려 −5~−38% 나빠집니다. 즉 전형적인 과적합입니다.
+**This is the opposite of the hypothesis.** On train, token is the lowest (−1.9%), but on test it is **the highest** (+3.3%).
+The plan's prediction that "the difference will be large in the left/right/deceleration segments" also came out with the opposite sign —
+in those segments switching is actually −5 to −38% worse. In other words, classic overfitting.
 
-12-step closed-loop rollout (토큰을 예측 상태에서 매 스텝 재계산 — 미래 정보 누출 없음):
+12-step closed-loop rollout (the token is recomputed every step from the predicted state — no future-information leakage):
 
 | | ADE | FDE |
 |---|---|---|
@@ -51,44 +51,44 @@ train 27,348 샘플 / zara2 5,945 샘플.
 | global K | 0.339 | 0.765 |
 | switching | 0.332 | 0.743 |
 
-**Koopman 쪽이 전부 등속 외삽에 집니다.** switching이 global보다 아주 조금 낫지만, 둘 다 아무것도 안 하는 것보다 나쁩니다.
+**All the Koopman variants lose to constant-velocity extrapolation.** switching is very slightly better than global, but both are worse than doing nothing.
 
-## 실험 2 — 교락요인 제거: zara2 내부 분할
+## Experiment 2 — removing the confounder: split within zara2
 
-실험 1은 서로 **다른 장면**에서 fit/test 했습니다. switching이 진 게 (a) 애초에 하나의 K로 충분해서인지,
-(b) local K_j가 실재하지만 **장면마다 달라서** 전이가 안 되는지 구분이 안 됩니다.
-그래서 zara2 안에서 agent 단위로 반씩 나눠(트랙 내부 시간 분할은 같은 트랙 동역학이 새므로 금지) 다시 쟀습니다.
+Experiment 1 fit and tested on **different scenes**. This can't distinguish whether switching lost because (a) a single K was sufficient in the first place,
+or (b) local K_j do exist but **differ per scene** so they don't transfer.
+So it was re-measured by splitting zara2 in half at the agent level (within-track temporal splits are forbidden because the same track's dynamics would leak).
 
 | | global | random | token | vs global | vs random |
 |---|---|---|---|---|---|
 | within-zara2 | 0.001897 | 0.001905 | 0.001853 | **+2.30%** | +2.73% |
 
-**부호가 뒤집힙니다.** 장면 shift를 없애면 switching이 이깁니다 — random 통제군보다도 이기므로 파라미터 수 효과가 아닙니다.
-seed 5개 중 4개에서 +1.5~2.3%, 1개에서 −0.04%. 방향은 안정적이지만 **크기가 매우 작습니다.**
+**The sign flips.** Removing the scene shift, switching wins — and it beats the random control too, so it isn't a parameter-count effect.
+In 4 of 5 seeds +1.5 to 2.3%, in 1 seed −0.04%. The direction is stable but **the magnitude is very small.**
 
-임계값 sweep에서 더 흥미로운 게 나왔습니다:
+The threshold sweep produced something more interesting:
 
-| tau_theta / tau_v | straight 비율 | vs global |
+| tau_theta / tau_v | straight fraction | vs global |
 |---|---|---|
 | 0.05 / 0.01 | 0.68 | **+6.36%** |
 | 0.10 / 0.02 | 0.78 | +3.70% |
 | 0.15 / 0.04 | 0.88 | +2.30% |
 | 0.30 / 0.08 | 0.96 | −0.06% |
 
-**분할을 잘게 쪼갤수록 이득이 커집니다.** 이건 "5개의 이산 모드가 있다"는 그림보다,
-동역학이 연속적으로 변하고 조각선형 근사가 조각을 늘릴수록 좋아지는 그림에 가깝습니다.
+**The finer the partition, the larger the gain.** This looks less like the picture of "there are 5 discrete modes" and more like a picture
+where the dynamics vary continuously and a piecewise-linear approximation improves as you add pieces.
 
-## 현재까지의 결론
+## Conclusions so far
 
-1. **local K_j는 실재하지만 장면 특이적입니다.** 같은 장면 안에서는 random 통제군을 이기고(+2~6%), 장면을 건너가면 집니다. 계획서의 "성공하면 Hotel, Univ로 바로 반복" 은 이 이유로 그대로는 안 됩니다 — 전이 가능성 자체가 검증 대상입니다.
-2. **효과 크기가 서사를 지탱하기엔 작습니다.** 최상의 설정에서도 +6%이고, closed-loop ADE로는 등속 외삽에도 못 미칩니다. 지금 상태로는 "여러 K가 필요하다"보다 "관측함수가 너무 약하다"는 설명이 더 잘 맞습니다 — `psi=[p,v,1]` 에서 K_j가 학습할 수 있는 건 사실상 토큰별 상수 가속도뿐입니다.
-3. **이산 모드의 증거는 약합니다.** 잘게 쪼갤수록 좋아지는 경향은 연속적 변화를 시사합니다. 전이행렬의 self-transition (straight 0.89, 나머지 0.13~0.19) 도 straight 외에는 모드가 유지되지 않음을 보여줍니다.
+1. **Local K_j do exist but are scene-specific.** Within the same scene they beat the random control (+2 to 6%), and across scenes they lose. The plan's "if it succeeds, immediately repeat on Hotel and Univ" won't work as is for this reason — transferability itself is what needs to be validated.
+2. **The effect size is too small to carry the narrative.** Even the best setting is +6%, and in closed-loop ADE it falls short of even constant-velocity extrapolation. As things stand, "the observable is too weak" fits better than "multiple K are needed" — with `psi=[p,v,1]`, all K_j can really learn is a per-token constant acceleration.
+3. **The evidence for discrete modes is weak.** The tendency to improve with finer splits suggests continuous variation. The transition matrix's self-transitions (straight 0.89, the rest 0.13 to 0.19) also show that no mode other than straight is maintained.
 
-## 실험 3 — gate: observable을 키우면 global K 하나로 CV를 넘는가
+## Experiment 3 — gate: does enlarging the observable let a single global K beat CV?
 
-M=1 고정, observable만 sweep. 지표는 one-step MSE가 아니라 **closed-loop 12-step ADE** 입니다
-(one-step 잔차는 구조적으로 공짜인 성분이 지배해서 rollout 품질을 거의 말해주지 않습니다).
-ridge도 함께 sweep했습니다 — ridge=1e-6에서 fit한 K는 고유값이 1을 넘어 12스텝 만에 발산할 수 있고, 그건 observable이 아니라 fit의 문제이기 때문입니다.
+M=1 fixed, sweeping only the observable. The metric is not one-step MSE but **closed-loop 12-step ADE**
+(one-step residuals are dominated by the structurally free components and say almost nothing about rollout quality).
+ridge was swept as well — a K fit at ridge=1e-6 can have eigenvalues exceeding 1 and diverge within 12 steps, and that is a problem of the fit, not the observable.
 
 | observable (dim) | within-zara2 vs CV | LOO vs CV |
 |---|---|---|
@@ -100,14 +100,14 @@ ridge도 함께 sweep했습니다 — ridge=1e-6에서 fit한 K는 고유값이 
 | delay-3 +nonlin (14) | +2.6% | −1.6% |
 | **delay-5 +nonlin (18)** | **+2.9%** | **+0.1%** |
 
-**간신히 통과입니다.** time-delay는 **delay-2에서 이미 포화**합니다 — lag를 더 넣어도 개선이 없습니다.
-계획서가 기대한 "최근 가속 추세 / 곡률 변화"를 선형 latent가 담아내지 못한다는 뜻입니다.
-LOO에서 CV를 넘는 데 실제로 기여한 건 delay가 아니라 **비선형 항**(‖v‖, ‖v‖², v‖v‖)이었고, 그마저 +0.1% 동률입니다.
+**A narrow pass.** time-delay **already saturates at delay-2** — adding more lag gives no improvement.
+This means the linear latent can't capture the "recent acceleration trend / curvature change" that the plan expected.
+What actually contributed to beating CV in LOO was not the delay but the **nonlinear terms** (‖v‖, ‖v‖², v‖v‖), and even that is only a +0.1% tie.
 
-## 실험 4·5 — M-sweep: 이산 regime인가 연속인가
+## Experiments 4 & 5 — M-sweep: discrete regimes or continuous?
 
-observable을 delay-5+nonlin으로 고정, 분할은 psi의 속도-delay 블록에 k-means(handcrafted 토큰은 5개가 상한이고 88%가 straight라 부적합).
-rollout 중 배정은 **전파된 psi**로만 하므로 미래 누출 없음. LOO 프로토콜, k-means seed 5개:
+Observable fixed at delay-5+nonlin, partitioning by k-means on psi's velocity-delay block (handcrafted tokens cap at 5 and are 88% straight, so unsuitable).
+Assignment during rollout uses only the **propagated psi**, so there is no future leakage. LOO protocol, 5 k-means seeds:
 
 | M | ADE mean ± std | vs CV | max ρ(K_j) |
 |---|---|---|---|
@@ -118,81 +118,81 @@ rollout 중 배정은 **전파된 psi**로만 하므로 미래 누출 없음. LO
 | 16 | 0.3257 ± 0.0127 | −1.2% | 1.925 |
 | 32 | 1.1900 ± 0.0995 | −269.7% | 3.033 |
 
-M=8 peak은 **seed에 안정적입니다** (std 0.0007). 표준 LOO 벤치마크 프로토콜에서 CV 대비 +4.7%로, 지금까지 나온 최고 결과입니다.
-size-matched random 통제군 대비로도 +6.3%라 파라미터 수 효과가 아닙니다.
+The M=8 peak is **stable across seeds** (std 0.0007). At +4.7% over CV under the standard LOO benchmark protocol, it is the best result so far.
+Against the size-matched random control it is also +6.3%, so it isn't a parameter-count effect.
 
-**그런데 이 곡선으로 이산/연속을 판정하면 안 됩니다.** ρ(K_j) 열이 이유입니다 —
-M이 커질수록 각 K_j가 적은 샘플로 fit되면서 **고유값이 1을 넘어가고**(M=32에서 3.03), 12스텝 rollout이 이를 지수적으로 증폭합니다.
-M=4가 M=2보다 나쁘고 M=8이 다시 좋아지는 비단조성도 regime 구조보다 이 불안정성으로 더 잘 설명됩니다.
-즉 sweep이 측정한 것은 **"몇 개의 regime이 있는가"가 아니라 "몇 개까지 안정적으로 fit되는가"** 입니다.
+**But this curve must not be used to decide discrete vs. continuous.** The ρ(K_j) column is why —
+as M grows, each K_j is fit from fewer samples and its **eigenvalues exceed 1** (3.03 at M=32), and the 12-step rollout amplifies this exponentially.
+The non-monotonicity where M=4 is worse than M=2 and M=8 improves again is also better explained by this instability than by regime structure.
+In other words, what the sweep measured is **not "how many regimes there are" but "how many can be stably fit."**
 
-## 실험 6 — 안정성을 통제한 M-sweep
+## Experiment 6 — M-sweep with stability controlled
 
-`bsk/stability.py`. 두 가지를 독립적으로 걸고 비교했습니다 (LOO, k-means seed 3개, 동일 분할 공유).
+`bsk/stability.py`. Two mechanisms were applied independently and compared (LOO, 3 k-means seeds, sharing the same partition).
 
-**구현 전에 짚어야 했던 구조적 함정.** `psi = [p, v, ..., 1]` 에서 `p_{t+1} = p_t + v_t` 항등식과 상수 채널 때문에
-K는 **고유값 1의 Jordan block을 필연적으로** 가집니다. `‖K^h‖` 가 h에 선형으로 커지는 건 병리가 아니라 **위치 적분 그 자체**입니다.
-따라서 `λ̃ = λ/max(1,|λ|/(1-ε))` 를 모든 고유값에 적용하면 위치 적분이 `(1-ε)^h` 로 감쇠합니다.
-그래서 불안정한 고유값만 정확히 1로 캡하는 `proj/excess`(ε=0) 와 원안 그대로인 `proj/all`(ε=0.01) 을 나눠 비교했습니다.
+**A structural trap that had to be noted before implementation.** In `psi = [p, v, ..., 1]`, because of the `p_{t+1} = p_t + v_t` identity and the constant channel,
+K **necessarily has a Jordan block for eigenvalue 1**. That `‖K^h‖` grows linearly in h is not a pathology but **position integration itself**.
+Hence applying `λ̃ = λ/max(1,|λ|/(1-ε))` to every eigenvalue damps position integration by `(1-ε)^h`.
+So two variants were separated and compared: `proj/excess` (ε=0), which caps only the unstable eigenvalues at exactly 1, and `proj/all` (ε=0.01), the original proposal as is.
 
 **ADE (LOO, CV=0.3219):**
 
 | method | M=1 | M=2 | M=4 | **M=8** | M=16 | M=32 |
 |---|---|---|---|---|---|---|
-| plain (고정 ridge) | 0.3217 | 0.3185 | 0.3268 | 0.3064 | 0.3191 | 1.1313 |
+| plain (fixed ridge) | 0.3217 | 0.3185 | 0.3268 | 0.3064 | 0.3191 | 1.1313 |
 | **scaled ridge** | 0.3217 | 0.3186 | 0.3249 | **0.3050** | 0.3076 | 0.3694 |
 | proj/excess | 0.3217 | 0.3705 | 1.7688 | 1.0741 | 0.8986 | 0.8700 |
 | proj/all | 0.7705 | 1.7266 | 1.6150 | 1.3444 | 1.5006 | 1.2607 |
 | scaled+proj | 0.3217 | 0.3549 | 0.7237 | 1.0245 | 0.6554 | 0.5343 |
 
-**고유값 사영은 실패했습니다 — 그것도 ρ 목표를 완벽히 달성하면서.** 세 가지가 동시에 확인됐습니다:
+**Eigenvalue projection failed — and it did so while perfectly meeting the ρ target.** Three things were confirmed at once:
 
-1. **ρ=1.000을 정확히 맞췄는데 ADE가 5배 나빠집니다** (proj/excess M=4: 1.7688). 우려했던 대로 **비정규 행렬의 고유분해가 ill-conditioned** 이기 때문입니다 — `cond(V)` 가 M=4에서 1.6e3, M=32에서 2.6e3입니다. `V Λ̃ V⁻¹` 재구성이 그 조건수만큼 원래 연산자를 훼손합니다.
-2. **`proj/all` 은 M=1에서조차 0.3217 → 0.7705로 무너집니다.** 구조적 λ=1 논증이 그대로 확인된 것입니다 — 위치 적분을 깎으면 예측이 제자리로 편향됩니다.
-3. **ρ ≤ 1 이 12스텝을 못 막습니다.** proj/excess는 ρ=1.000인데 `‖K¹²‖` 가 여전히 94.6입니다. 유한구간 폭발은 스펙트럼이 아니라 비정규성이 만듭니다.
+1. **ρ=1.000 was hit exactly, yet ADE is 5x worse** (proj/excess M=4: 1.7688). As feared, this is because **the eigendecomposition of a non-normal matrix is ill-conditioned** — `cond(V)` is 1.6e3 at M=4 and 2.6e3 at M=32. The `V Λ̃ V⁻¹` reconstruction corrupts the original operator in proportion to that condition number.
+2. **`proj/all` collapses even at M=1, 0.3217 → 0.7705.** This directly confirms the structural λ=1 argument — shaving the position integration biases predictions toward standing still.
+3. **ρ ≤ 1 does not prevent the 12 steps.** proj/excess has ρ=1.000 yet `‖K¹²‖` is still 94.6. Finite-horizon blow-up is produced by non-normality, not the spectrum.
 
-**크기 기반 ridge는 성공했습니다.** `λ_j = λ₀·N/N_j` 만으로 ρ와 `‖K¹²‖` 가 훨씬 잘 잡히고 (M=16: ρ 1.920→1.142, ‖K¹²‖ 7859→32), M=32의 붕괴(1.1313→0.3694)도 대부분 복구됩니다.
+**Size-based ridge succeeded.** With just `λ_j = λ₀·N/N_j`, ρ and `‖K¹²‖` are held far better (M=16: ρ 1.920→1.142, ‖K¹²‖ 7859→32), and the M=32 collapse (1.1313→0.3694) is largely recovered.
 
-## 그래서 이산인가 연속인가
+## So, discrete or continuous?
 
-안정성을 통제한 곡선 (scaled ridge, ±는 seed std):
+The stability-controlled curve (scaled ridge, ± is seed std):
 
 | M | 1 | 2 | 4 | **8** | 16 | 32 |
 |---|---|---|---|---|---|---|
 | ADE | 0.3217 | 0.3186 | 0.3249 | **0.3050**±0.0008 | 0.3076±0.0021 | 0.3694±0.0113 |
 | vs CV | +0.0% | +1.0% | −0.9% | **+5.2%** | +4.4% | −14.8% |
 
-**M≈8에서 포화합니다.** 8→16이 개선 없이 평평하고(0.3050 vs 0.3076), M을 더 늘리면 나빠집니다.
-제시하신 판정 기준으로는 **"소수의 discrete regimes"** 쪽입니다. 실험 2에서 잠정적으로 "연속" 쪽으로 기울었던 추측은 뒤집혔습니다 —
-그때 잘게 쪼갤수록 좋아 보였던 건 one-step 지표였고, closed-loop에서는 성립하지 않습니다.
+**It saturates around M≈8.** 8→16 is flat with no improvement (0.3050 vs 0.3076), and increasing M further makes it worse.
+By the proposed decision criterion, this points to **"a small number of discrete regimes."** The tentative lean toward "continuous" from Experiment 2 is overturned —
+what looked better with finer splits back then was a one-step metric, and it does not hold in closed-loop.
 
-**다만 두 가지 유보가 있습니다.**
-- **M=4가 M=2보다 나쁩니다** (0.3249 vs 0.3186). 깨끗한 포화 곡선이 아니라 비단조적이고, 이 부분은 설명되지 않았습니다. "regime이 정확히 8개"라는 주장은 아직 못 합니다.
-- **M=32는 여전히 안정성이 통제되지 않았습니다** (scaled에서도 ρ=1.959). 꼬리 구간은 아직 regime 구조가 아니라 fit 안정성을 재고 있습니다.
+**Two caveats remain, however.**
+- **M=4 is worse than M=2** (0.3249 vs 0.3186). It is non-monotonic rather than a clean saturation curve, and this part is unexplained. The claim "exactly 8 regimes" cannot yet be made.
+- **M=32 still has uncontrolled stability** (ρ=1.959 even with scaled). The tail region is still measuring fit stability, not regime structure.
 
-## 종합 결론
+## Overall conclusions
 
-| | 결과 |
+| | result |
 |---|---|
-| 하나의 K vs 여러 K_j | 같은 장면 안에서 K_j가 유의하게 이김 (random 통제군 대비 +2~6%) |
-| 장면 간 전이 | handcrafted token은 실패. k-means 분할 + scaled ridge로는 LOO에서도 성립 |
-| observable 강화 | delay는 2에서 포화, 비선형 항이 실질 기여, global K는 CV와 동률 |
-| 안정성 제약 | **고유값 사영은 실패**(cond(V)~1e3), **크기 기반 ridge가 정답** |
-| 이산 vs 연속 | **M≈8에서 포화 → 소수의 discrete regimes 쪽**, 단 M=4 비단조성 미해명 |
-| 최고 성능 | LOO, delay-5+nonlin, M=8, scaled ridge → ADE **0.3050** vs CV 0.3219 (**+5.2%**) |
+| one K vs. several K_j | within the same scene K_j wins significantly (+2 to 6% over the random control) |
+| cross-scene transfer | handcrafted token fails. k-means partition + scaled ridge holds even under LOO |
+| observable enrichment | delay saturates at 2, the nonlinear terms are the real contributor, global K ties CV |
+| stability constraint | **eigenvalue projection fails** (cond(V)~1e3), **size-based ridge is the answer** |
+| discrete vs. continuous | **saturates at M≈8 → leans to a few discrete regimes**, though the M=4 non-monotonicity is unexplained |
+| best performance | LOO, delay-5+nonlin, M=8, scaled ridge → ADE **0.3050** vs CV 0.3219 (**+5.2%**) |
 
-## 실험 7 — hard vs soft mixture
+## Experiment 7 — hard vs soft mixture
 
-`exp/07_hard_vs_soft.py`. 안정성이 통제됐으므로(scaled ridge, M=8에서 max ρ=1.093) 이제
-`sum_j pi_j K_j psi` 의 개선분을 "불안정한 K_j의 평균화 효과"와 교락시키지 않고 읽을 수 있습니다.
+`exp/07_hard_vs_soft.py`. Now that stability is controlled (scaled ridge, max ρ=1.093 at M=8), the improvement from
+`sum_j pi_j K_j psi` can be read without confounding it with "the averaging effect of unstable K_j."
 
-**결정적 통제군은 `uniform`** 입니다. soft가 hard를 이겨도 그것만으로는 "부드러운 regime 전이가 중요하다"가 되지 않습니다 —
-convex combination은 평균 연산자 쪽으로 shrink되는 것이라 regime과 무관한 분산 감소일 수 있습니다.
-`uniform = mean_j K_j` (상태 무관 평균)보다 soft가 나아야만 pi_t가 정보를 나른다고 말할 수 있습니다.
+**The decisive control is `uniform`.** Even if soft beats hard, that alone does not establish "smooth regime transitions matter" —
+a convex combination shrinks toward the mean operator, so it could be a variance reduction unrelated to regimes.
+Only if soft beats `uniform = mean_j K_j` (the state-independent average) can we say that pi_t carries information.
 
-ADE (LOO, CV=0.3219, seed 3개):
+ADE (LOO, CV=0.3219, 3 seeds):
 
-| variant | M=4 | M=8 | M=16 | 유효 모드 수 (M=8) |
+| variant | M=4 | M=8 | M=16 | effective # of modes (M=8) |
 |---|---|---|---|---|
 | hard | 0.3249 | **0.3050** | 0.3076 | 1.00 |
 | soft tau=0.05 | 0.3249 | 0.3051 | 0.3075 | 1.01 |
@@ -200,21 +200,21 @@ ADE (LOO, CV=0.3219, seed 3개):
 | soft tau=1.0 | 0.3679 | 0.3129 | 0.3081 | 1.41 |
 | soft tau=2.0 | 0.4639 | 0.3270 | 0.3099 | 1.99 |
 | soft tau=4.0 | 0.5743 | 0.3951 | 0.3334 | 3.32 |
-| **uniform (평균 연산자)** | 0.7127 | **1.0729** | 0.8430 | 8.00 |
+| **uniform (mean operator)** | 0.7127 | **1.0729** | 0.8430 | 8.00 |
 
-**가설 기각입니다.** 그런데 `exp/07b_weight_entropy.py` 를 돌리기 전에는 이 표를 잘못 읽을 뻔했습니다.
-tau ≤ 0.5 에서 soft가 hard와 동률인 것은 발견이 아니라 **동어반복**입니다 —
-그 구간의 유효 모드 수는 1.01~1.15로, mixture가 사실상 one-hot이라 **soft가 곧 hard였습니다.**
-mixture가 진짜로 soft해지는 tau ≥ 1.0 구간에서는 **단조롭게 나빠집니다.**
-즉 "부드러울수록 나쁘다"가 정확한 요약이고, 유일한 예외인 M=4 tau=0.5의 +0.85%는 유효 모드 1.14 —
-mixture 효과가 아니라 배정 경계를 살짝 매끄럽게 한 효과입니다.
+**Hypothesis rejected.** But before running `exp/07b_weight_entropy.py`, this table was nearly misread.
+soft tying hard at tau ≤ 0.5 is not a finding but a **tautology** —
+the effective number of modes there is 1.01 to 1.15, so the mixture is effectively one-hot and **soft simply was hard.**
+In the tau ≥ 1.0 range where the mixture truly becomes soft, it **worsens monotonically.**
+So "the softer, the worse" is the accurate summary, and the only exception, +0.85% at M=4 tau=0.5, has 1.14 effective modes —
+not a mixture effect but the effect of slightly smoothing the assignment boundary.
 
-### 왜 평균이 무너지는가 — 첫 가설은 틀렸습니다
+### Why the average collapses — the first hypothesis was wrong
 
-ρ(K_unif)=0.984 < 1 인데 ADE가 3.5배 나빠지길래 "λ=1 모드가 깨져 제자리에 서는 편향"(실험 6의 proj/all과 같은 병리)이라고
-예상했습니다. `exp/07c_stall.py` 로 예측 보폭을 직접 재보니 **반대였습니다.**
+Since ρ(K_unif)=0.984 < 1 yet ADE is 3.5x worse, the expectation was "a bias toward standing still from the broken λ=1 mode" (the same pathology as proj/all in Experiment 6).
+Measuring the predicted stride length directly with `exp/07c_stall.py` showed **the opposite.**
 
-예측 보폭 / 마지막 관측 보폭:
+predicted stride / last observed stride:
 
 | | h=1 | h=6 | h=12 |
 |---|---|---|---|
@@ -223,51 +223,51 @@ mixture 효과가 아니라 배정 경계를 살짝 매끄럽게 한 효과입�
 | soft tau=1 | 1.124 | 2.762 | 6.289 |
 | **uniform** | **13.272** | 49.562 | 69.459 |
 
-멈추는 게 아니라 **폭발합니다. 그것도 첫 스텝에서 이미 13배** 입니다. 한 스텝 만에 터지면 스펙트럼이나 horizon 문제가 아닙니다.
+It doesn't stall — it **explodes. And already 13x at the first step.** If it blows up in a single step, it's not a spectrum or horizon problem.
 
-`exp/07d_offdomain.py` 가 진짜 원인을 짚습니다. `(sum_j pi_j K_j) psi = sum_j pi_j (K_j psi)` 이므로
-soft mixture는 **cluster j가 한 번도 본 적 없는 상태에서 K_j를 평가할 수밖에 없습니다.**
+`exp/07d_offdomain.py` pinpoints the real cause. Since `(sum_j pi_j K_j) psi = sum_j pi_j (K_j psi)`,
+the soft mixture **inevitably evaluates K_j on states that cluster j has never seen.**
 
-| M | in-domain RMSE | off-domain RMSE | 비율 | global K |
+| M | in-domain RMSE | off-domain RMSE | ratio | global K |
 |---|---|---|---|---|
 | 4 | 0.0438 | 0.1025 | 2.3x | 0.0435 |
 | 8 | 0.0425 | 0.1268 | **3.0x** | 0.0435 |
 | 16 | 0.0429 | 0.1423 | 3.3x | 0.0435 |
 
-**K_j는 자기 영역 밖에서 2.3~3.3배 나쁘고, M이 커질수록 더 나빠집니다.** 국소 연산자는 국소적으로만 유효한 affine map이라
-외삽하면 안 되고, 따라서 섞는 것 자체가 무효 연산입니다.
+**K_j is 2.3 to 3.3x worse outside its own domain, and worse as M grows.** A local operator is an affine map valid only locally,
+so it must not be extrapolated, and therefore mixing them is itself an invalid operation.
 
-이건 부수적으로 **regime 가설에 유리한 증거**이기도 합니다. 만약 K_j들이 전부 global K 근처의 잡음이었다면
-off-domain 오차가 in-domain과 비슷했을 것입니다. 3배 차이는 K_j들이 **실제로 서로 다른 map** 이라는 뜻입니다.
+Incidentally, this is also **evidence in favor of the regime hypothesis.** If the K_j were all just noise around the global K,
+the off-domain error would have been similar to the in-domain one. The 3x difference means the K_j are **genuinely different maps.**
 
-**단, 이 실험의 사정거리를 넘겨 읽으면 안 됩니다.** 여기서 기각된 것은 *operator averaging* 형태의 soft mixture 하나뿐입니다.
-계획서의 branch-preserving mixture `sum_j pi_j N(K_j psi, Q_j)` 는 연산자를 평균내지 않으므로 **기각되지 않았고, 검증되지도 않았습니다.**
-좌회전/우회전을 평균내 직진을 만드는 문제도 그쪽에서 따로 다뤄야 합니다.
+**But do not read beyond this experiment's range.** What was rejected here is only the *operator averaging* form of soft mixture.
+The plan's branch-preserving mixture `sum_j pi_j N(K_j psi, Q_j)` does not average operators, so it is **neither rejected nor validated.**
+The problem of averaging a left turn and a right turn into going straight must also be handled separately over there.
 
-## 실험 8 — regime은 무엇인가 (+ 파라미터 수를 맞춘 대체 분할)
+## Experiment 8 — what is a regime (+ a parameter-matched alternative partition)
 
-`exp/08_regime_identity.py`. 클러스터 통계에 이름을 붙이는 것만으로는 반증 불가능합니다 —
-속도 공간의 **어떤** 분할이든 그럴듯한 표가 나옵니다. 그래서 같은 M, 같은 ridge, 같은 rollout에서
-**분할만 빈약한 것으로 바꾼 통제군**을 함께 돌렸습니다.
+`exp/08_regime_identity.py`. Merely naming cluster statistics is unfalsifiable —
+**any** partition of velocity space produces a plausible table. So, at the same M, same ridge, and same rollout,
+**a control that changes only the partition to a poor one** was run alongside.
 
 | partition | M=4 | M=8 |
 |---|---|---|
 | **k-means (vel-delay)** | 0.3249 | **0.3050** |
-| speed-quantile (속도만) | 0.3400 | 0.3303 |
-| heading-octant (방향만) | 0.3431 | 0.3318 |
-| speed × dtheta (수제 primitive 축) | 0.3395 | 0.3363 |
+| speed-quantile (speed only) | 0.3400 | 0.3303 |
+| heading-octant (direction only) | 0.3431 | 0.3318 |
+| speed × dtheta (handmade primitive axes) | 0.3395 | 0.3363 |
 | random | 0.3249 | 0.3272 |
 | (global K = 0.3217, CV = 0.3219) | | |
 
-**두 가지가 동시에 나옵니다.** k-means 분할은 빈약한 분할들을 확실히 이깁니다 — 즉 regime이 단순 speed bin도,
-단순 direction bin도 아닙니다. 그런데 **구조를 가졌지만 틀린 분할은 random보다도 나쁩니다.**
-random 분할은 각 K_j가 전체의 불편 표본이라 사실상 global K로 수렴하고(0.3249 ≈ 0.3217), 그래서 안전합니다.
-반대로 speed/heading 분할은 잘못 특화된 연산자를 만들어 global K보다 **나빠집니다.**
-그리고 M=4에서는 k-means조차 random과 동률입니다(0.3249 vs 0.3249). **global K를 실제로 이기는 설정은 M=8 k-means 하나뿐입니다.**
+**Two things emerge at once.** The k-means partition clearly beats the poor partitions — i.e. a regime is neither a simple speed bin
+nor a simple direction bin. Yet **a partition that has structure but is wrong is worse than random.**
+In the random partition each K_j is an unbiased sample of the whole, so it effectively converges to the global K (0.3249 ≈ 0.3217), and is therefore safe.
+Conversely, the speed/heading partitions produce mis-specialized operators and become **worse than the global K.**
+And at M=4 even k-means ties random (0.3249 vs 0.3249). **The only setting that actually beats the global K is M=8 k-means.**
 
-M=8 regime의 정체 (train, 속도순 정렬):
+Identity of the M=8 regimes (train, sorted by speed):
 
-| j | N | frac | E‖v‖ | E\|dθ\| | E Δ‖v‖ | heading 집중도 | 최다 scene | 비중 |
+| j | N | frac | E‖v‖ | E\|dθ\| | E Δ‖v‖ | heading concentration | top scene | share |
 |---|---|---|---|---|---|---|---|---|
 | 2 | 6726 | 0.269 | 0.105 | 0.195 | +0.005 | **0.31** | students001 | 0.37 |
 | 4 | 4325 | 0.173 | 0.270 | 0.090 | −0.001 | 0.88 | students001 | 0.42 |
@@ -278,44 +278,44 @@ M=8 regime의 정체 (train, 속도순 정렬):
 | 3 | 817 | 0.033 | 1.014 | 0.085 | +0.002 | 0.97 | **biwi_eth 0.95** | |
 | 1 | 1166 | 0.047 | 1.027 | 0.070 | −0.007 | 0.98 | **biwi_eth 0.91** | |
 
-**계획서가 기대한 motion primitive는 나오지 않았습니다.**
+**The motion primitives the plan expected did not appear.**
 
-- **heading 집중도가 8개 중 7개에서 0.88~0.98입니다.** regime은 사실상 **속도 벡터(속력 × 방향) bin** 입니다. 등방적인 건 가장 느린 regime 2 하나뿐이고, 그건 느릴 때 heading이 잡음이라 그런 것입니다.
-- **가속/감속 regime이 없습니다.** E[Δ‖v‖]가 전부 ±0.007 안에 있습니다. E\|dθ\|도 속력과 역상관일 뿐(느릴수록 큼) 독립적인 turning mode가 아닙니다.
-- **고속 regime 1·3은 사실상 scene token입니다** (biwi_eth 91~95%).
+- **heading concentration is 0.88 to 0.98 in 7 of the 8.** A regime is effectively a **velocity-vector (speed × direction) bin.** The only isotropic one is the slowest regime 2, and that's because heading is noise when slow.
+- **There is no acceleration/deceleration regime.** E[Δ‖v‖] is all within ±0.007. E\|dθ\| is merely inversely correlated with speed (larger when slower), not an independent turning mode.
+- **The high-speed regimes 1 and 3 are effectively scene tokens** (biwi_eth 91 to 95%).
 
-## 실험 9 — 이건 애초에 switching이 맞는가
+## Experiment 9 — is this even switching in the first place?
 
-실험 8의 전이행렬에서 **평균 self-transition이 0.965** 로 나왔습니다. 12스텝 rollout이면 토큰이 한 번도 안 바뀐다는 뜻입니다.
-그래서 토큰을 마지막 관측 시점에 한 번만 정하고 **12스텝 내내 고정**한 변형과 직접 비교했습니다.
+Experiment 8's transition matrix gave **an average self-transition of 0.965.** Over a 12-step rollout that means the token never changes.
+So it was directly compared against a variant that fixes the token once at the last observation and **holds it constant across all 12 steps.**
 
-| M | switching | frozen | 차이 | 12스텝당 전환 횟수 | 한 번이라도 전환한 window |
+| M | switching | frozen | difference | switches per 12 steps | windows that switched at least once |
 |---|---|---|---|---|---|
 | 4 | 0.3249 | 0.3246 | **−0.09%** | 0.09 | 0.07 |
 | **8** | **0.3050** | **0.3063** | **+0.42%** | **0.11** | **0.10** |
 | 16 | 0.3076 | 0.3125 | +1.57% | 0.22 | 0.19 |
 
-**핵심 결과입니다. CV 대비 +5.2% 중 switching이 기여하는 건 +0.42% 뿐입니다.**
-window의 90%는 토큰이 한 번도 바뀌지 않습니다. 나머지 92%의 이득은 **처음에 맞는 국소 연산자를 고르는 것**에서 옵니다.
+**This is the key result. Of the +5.2% over CV, switching contributes only +0.42%.**
+In 90% of windows the token never changes. The remaining 92% of the gain comes from **choosing the right local operator at the start.**
 
-즉 지금 이기고 있는 모델을 정직하게 기술하면 **switching Koopman이 아니라
-속도 특징 위의 정적 mixture-of-experts(= 속도장의 조각선형 근사)** 입니다.
+In other words, an honest description of the currently winning model is **not a switching Koopman but
+a static mixture-of-experts over velocity features (= a piecewise-linear approximation of the velocity field).**
 
-zara2가 실제로 쓰는 regime:
+The regimes zara2 actually uses:
 
 | regime | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 |---|---|---|---|---|---|---|---|---|
-| train 점유율 | 0.148 | 0.047 | 0.269 | 0.033 | 0.173 | 0.068 | 0.062 | 0.200 |
-| **zara2 점유율** | 0.220 | **0.003** | 0.372 | **0.003** | 0.058 | 0.012 | 0.022 | 0.310 |
+| train occupancy | 0.148 | 0.047 | 0.269 | 0.033 | 0.173 | 0.068 | 0.062 | 0.200 |
+| **zara2 occupancy** | 0.220 | **0.003** | 0.372 | **0.003** | 0.058 | 0.012 | 0.022 | 0.310 |
 
-biwi_eth가 91~95%를 차지하던 regime 1·3을 zara2는 **거의 쓰지 않습니다**(0.003).
-scene-specific regime이 전이를 망치지 않은 이유는 전이가 잘 돼서가 아니라 **그냥 안 쓰이기 때문**입니다.
-실질적으로 zara2는 8개 중 3개(2, 7, 0 = 90%)로 굴러갑니다.
+zara2 **barely uses** regimes 1 and 3, where biwi_eth made up 91 to 95% (0.003).
+The reason the scene-specific regimes didn't ruin transfer is not that transfer works well but **that they simply aren't used.**
+In practice zara2 runs on 3 of the 8 (2, 7, 0 = 90%).
 
-## 실험 10 — 18×18 연산자는 파라미터 값을 하는가
+## Experiment 10 — does the 18×18 operator earn its parameters?
 
-`exp/10_complexity_ladder.py`. 실험 9에서 토큰이 사실상 고정이므로 모델은 "속도 벡터로 국소 연산자 하나 고르고 12번 적용"입니다.
-그게 전부라면 훨씬 작은 국소 모델이 같은 이득을 내야 합니다. **분할(M=8 k-means)은 고정하고 regime별 모델 클래스만** 바꿨습니다.
+`exp/10_complexity_ladder.py`. Since the token is effectively fixed in Experiment 9, the model is "pick one local operator from the velocity vector and apply it 12 times."
+If that's all it is, a much smaller local model should yield the same gain. **The partition (M=8 k-means) was fixed and only the per-regime model class** was varied.
 
 | model | params | ADE frozen | ADE switch | FDE | vs CV |
 |---|---|---|---|---|---|
@@ -326,16 +326,16 @@ scene-specific regime이 전이를 망치지 않은 이유는 전이가 잘 돼�
 | vlin+hist (+v_{t−1}) | 80 | 0.3100 | 0.3096 | 0.6911 | +3.8% |
 | **koopman-regime** | **2592** | 0.3063 | **0.3050** | 0.6769 | **+5.2%** |
 
-**"그룹마다 평균 가속도가 다르다"는 설명은 기각됩니다** — regime별 상수 가속도는 CV보다 **나쁩니다**(−2.9%).
-이득에는 속도의 **선형 사상**(감쇠·회전)이 필요하고 bias만으로는 안 됩니다.
-그리고 **80 파라미터가 +5.2% 중 +3.8%(73%)를 가져갑니다.** 남은 +1.4%를 위해 파라미터가 32배 더 듭니다.
-Koopman lift가 값을 하긴 하지만, 그 값은 대부분 훨씬 단순한 모델이 이미 취한 뒤의 잔여분입니다.
+**The explanation "each group has a different average acceleration" is rejected** — a per-regime constant acceleration is **worse** than CV (−2.9%).
+The gain requires a **linear map** of the velocity (damping/rotation), and bias alone is not enough.
+And **80 parameters capture +3.8% (73%) of the +5.2%.** The remaining +1.4% costs 32x more parameters.
+The Koopman lift does earn its keep, but that value is mostly the residual left after a much simpler model has already taken the rest.
 
-## 실험 11 — regime 분할이 "더 좋은 global 모델"과 구별되는가
+## Experiment 11 — is the regime partition distinguishable from "a better global model"?
 
-실험 10은 전 rung을 M=8에서만 돌렸으므로 두 설명을 분리하지 못합니다.
-(a) regime이 중요하다, (b) `v←Av+b` 가 그냥 CV보다 좋은 global 모델일 뿐이고 M=8 열은 그걸 재고 있었다.
-**이게 이 프로젝트의 헤드라인을 결정하는 통제입니다.** 각 rung을 M∈{1,2,4,8,16}에서 다시 돌렸습니다 — **행을 읽으십시오.**
+Experiment 10 ran every rung at M=8 only, so it can't separate the two explanations.
+(a) regimes matter, or (b) `v←Av+b` is just a better global model than CV and the M=8 column was measuring that.
+**This is the control that decides the project's headline.** Each rung was re-run at M∈{1,2,4,8,16} — **read the rows.**
 
 | model | M=1 | M=2 | M=4 | M=8 | M=16 | M=8 vs M=1 |
 |---|---|---|---|---|---|---|
@@ -344,38 +344,38 @@ Koopman lift가 값을 하긴 하지만, 그 값은 대부분 훨씬 단순한 �
 | vlin+hist | 0.3319 | 0.3224 | 0.3235 | 0.3096 | 0.3174 | **+6.72%** |
 | koopman | 0.3217 | 0.3186 | 0.3249 | **0.3050** | 0.3076 | +5.19% |
 
-**(b)는 기각되고 (a)가 살아남습니다.** 모든 모델 클래스가 M=1→M=8에서 개선됩니다(+1.4~6.7%).
-regime 분할은 "더 좋은 global 모델"로 환원되지 않습니다.
+**(b) is rejected and (a) survives.** Every model class improves from M=1→M=8 (+1.4 to 6.7%).
+The regime partition does not reduce to "a better global model."
 
-**동시에 결정적인 관찰이 하나 더 있습니다. M=1에서는 어떤 모델도 CV를 못 이깁니다** (koopman 0.3217이 동률로 최선).
-즉 이 프로젝트가 CV를 이기는 유일한 경로가 regime 분할입니다 — 그런데 그 총량이 5.2%입니다.
-M=2/M=4의 비단조성(accel은 M=2,4에서 급격히 나빠짐)도 여전히 미해명입니다.
+**There is one more decisive observation at the same time. At M=1 no model beats CV** (koopman 0.3217 is the best, a tie).
+In other words, the only path by which this project beats CV is the regime partition — and that total is 5.2%.
+The M=2/M=4 non-monotonicity (accel worsens sharply at M=2, 4) is also still unexplained.
 
-## 종합 결론 (실험 7–11 반영)
+## Overall conclusions (incorporating Experiments 7–11)
 
-| 질문 | 답 |
+| question | answer |
 |---|---|
-| hard vs soft | **hard.** operator averaging은 K_j를 자기 영역 밖에서 평가하게 되어(off-domain 오차 3배) 첫 스텝에서 13배 폭발 |
-| regime = motion primitive? | **아니오.** 8개 중 7개가 heading 집중도 0.88~0.98인 **속도 벡터 bin**. 가속/감속/turning mode 없음 |
-| regime = scene ID? | **부분적으로 예.** 고속 regime 1·3은 biwi_eth 91~95%이고, zara2는 그 둘을 0.003만 사용 |
-| 이건 switching인가? | **아니오.** self-transition 0.965, window의 90%가 토큰 불변. +5.2% 중 switching 기여는 **+0.42%** |
-| regime 분할이 필요한가? | **예.** 모든 모델 클래스가 M=1→8에서 개선되고, M=1에서는 무엇도 CV를 못 이김 |
-| Koopman lift가 필요한가? | **부분적.** 80 파라미터 모델이 이득의 73%를 가져감 |
-| 효과 크기 | ADE 0.3219 → **0.3050 (+5.2%)** |
+| hard vs soft | **hard.** operator averaging ends up evaluating K_j outside its own domain (3x off-domain error) and explodes 13x at the first step |
+| regime = motion primitive? | **No.** 7 of 8 are **velocity-vector bins** with heading concentration 0.88 to 0.98. No acceleration/deceleration/turning mode |
+| regime = scene ID? | **Partly yes.** high-speed regimes 1 and 3 are 91 to 95% biwi_eth, and zara2 uses those two only 0.003 |
+| is this switching? | **No.** self-transition 0.965, the token is unchanged in 90% of windows. Of the +5.2%, switching contributes **+0.42%** |
+| is the regime partition needed? | **Yes.** every model class improves from M=1→8, and at M=1 nothing beats CV |
+| is the Koopman lift needed? | **Partly.** the 80-parameter model captures 73% of the gain |
+| effect size | ADE 0.3219 → **0.3050 (+5.2%)** |
 
-**가장 정직한 한 문장:** 여기서 실제로 작동한 것은 switching Koopman dynamics가 아니라
-**속도 벡터 공간의 국소 선형화(정적 mixture-of-experts)** 이고, 그 이득은 재현 가능하지만 5% 수준입니다.
+**The most honest single sentence:** what actually worked here is not switching Koopman dynamics but
+**a local linearization of velocity-vector space (a static mixture-of-experts)**, and its gain is reproducible but at the 5% level.
 
-판정 기준에 대응시키면 **A도 B도 아니고, C와 E의 조합**입니다.
-A(소수의 discrete regimes)는 M≈8 포화라는 형태로는 성립하지만, 그 regime이 motion primitive가 아니라 속도 벡터 bin이고
-시간에 따라 전환되지 않으므로 **의도된 의미의 A는 아닙니다.**
-D(scene-specific)는 부분적으로만 맞습니다 — scene token인 regime은 존재하되 test scene이 그것을 쓰지 않아 무해했습니다.
+Mapped onto the decision criteria, it is **neither A nor B, but a combination of C and E.**
+A (a few discrete regimes) holds in the form of M≈8 saturation, but those regimes are velocity-vector bins rather than motion primitives, and
+they do not switch over time, so **it is not A in the intended sense.**
+D (scene-specific) is only partly right — scene-token regimes exist, but they were harmless because the test scene doesn't use them.
 
-## 다음 단계
+## Next steps
 
-1. ~~hard vs soft mixture~~ → 실험 7 기각.
-2. ~~regime 해석~~ → 실험 8·9. 속도 벡터 bin, switching 거의 없음.
-3. ~~복잡도 사다리~~ → 실험 10·11. 분할은 필요하지만 이득의 73%는 80 파라미터로 충분.
-4. **남은 것.** (i) branch-preserving mixture `sum_j pi_j N(K_j psi, Q_j)` — operator를 평균내지 않는 유일한 soft 형태로 아직 미검증.
-   (ii) M=2/M=4 비단조성. (iii) social context는 switching이 거의 일어나지 않는다는 실험 9 결과 때문에
-   "regime transition prior 개선"이라는 원래 진입점이 **사실상 소멸**했습니다 — 재설계 없이는 진행할 이유가 없습니다.
+1. ~~hard vs soft mixture~~ → rejected in Experiment 7.
+2. ~~regime interpretation~~ → Experiments 8 & 9. velocity-vector bins, almost no switching.
+3. ~~complexity ladder~~ → Experiments 10 & 11. the partition is needed, but 73% of the gain is covered by 80 parameters.
+4. **What remains.** (i) the branch-preserving mixture `sum_j pi_j N(K_j psi, Q_j)` — the only soft form that doesn't average operators, still unvalidated.
+   (ii) the M=2/M=4 non-monotonicity. (iii) for social context, because of the Experiment 9 finding that switching almost never happens,
+   the original entry point of "improving the regime transition prior" has **effectively vanished** — there's no reason to proceed without a redesign.

@@ -4,7 +4,7 @@ __pycache__/
 .ipynb_checkpoints/
 .DS_Store
 
-# 산출물 / 대용량 — 재생성 가능
+# artifacts / large files — regenerable
 runs/
 data/trajectron/
 external/
@@ -13,10 +13,11 @@ checkpoints/
 *.avi
 *.mp4
 
-# Grand Central(gc) 원본은 프레임별 파일 12,000+개라 저장소에 넣지 않음.
-# KoopCast++ 메인 벤치마크(ETH/UCY + snu-asri)엔 불필요한 optional 데이터셋이며,
-# gc 로더(kpp/data/loaders.py)는 남아 있으니 OpenTraj 원본을 여기 채우면 동작함.
+# The Grand Central (gc) raw data is 12,000+ per-frame files, so it is not kept
+# in the repo. It is an optional dataset not needed by the main KoopCast++
+# benchmark (ETH/UCY + snu-asri); the gc loader (kpp/data/loaders.py) is still
+# present, so it works once you drop the OpenTraj originals in here.
 data/raw/gc/
 
-# 단, 우리 모델 artifact 는 작아서 함께 버전 관리
+# Exception: our model artifacts are small, so we version them along with the code
 !kpp/predictors/koopcastpp/data/*.pt

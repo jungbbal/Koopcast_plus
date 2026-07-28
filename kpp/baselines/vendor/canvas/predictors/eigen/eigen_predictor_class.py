@@ -98,11 +98,11 @@ class EigenTrajectoryPredictor(BasePredictors):
     def __call__(self, dynamic_obs: Dict[Any, np.ndarray]) -> Dict[Any, np.ndarray]:
         data = dynamic_obs
         eligible_tensors = []
-        eligible_keys = []  # 추적 가능한 객체의 key 목록
+        eligible_keys = []  # List of keys for trackable objects
 
         for key in sorted(data.keys()):
             arr = data[key]
-            # 배열이 2차원이고 열이 2개이며, 최소 history_len행 이상의 데이터를 가지고 있는지 확인
+            # Check that the array is 2-dimensional with 2 columns and has at least history_len rows of data
             if arr.ndim == 2 and arr.shape[1] == 2 and arr.shape[0] >= self.history_len:
                 truncated = arr[-self.history_len:]
                 eligible_tensors.append(truncated)
@@ -128,7 +128,7 @@ class EigenTrajectoryPredictor(BasePredictors):
             final_dict: Dict[Any, np.ndarray] = {}
             for i, key in enumerate(eligible_keys):
                 pred = results[i]
-                # 예측 결과 길이가 target_prediction_length가 아니면 보간하여 맞춤
+                # If the prediction length is not target_prediction_length, interpolate to match
                 if pred.shape[0] != target_prediction_length:
                     pred = self.interpolate_trajectory(pred, target_prediction_length)
                 final_dict[key] = pred.astype(np.float32)
